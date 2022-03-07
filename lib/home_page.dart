@@ -4,6 +4,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:hs_mobil/service.dart';
+import 'package:hs_mobil/utils.dart';
 
 import 'enums.dart';
 import 'models/Status.dart';
@@ -27,7 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    updateStatus();
+  }
 
+  void updateStatus() {
     log("getting status...");
     getStatus().then((value) {
       setState(() {
@@ -45,17 +49,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void clearScreen() {
+    accessStatus = AccessStatus.loading;
+    status = null;
+    tempTimer?.cancel();
+    tempTimer = null;
+    tempStatus = AccessStatus.loading;
+    temp = null;
+  }
+
   void updateTemp() {
     log("getting temp...");
     getTemp().then((value) {
       setState(() {
         log(value.body);
-        Map<String, dynamic> map =
-            Map<String, dynamic>.from(jsonDecode(value.body));
+        // Map<String, dynamic> map =
+        //     Map<String, dynamic>.from(jsonDecode(value.body));
+
+        temp = Temp.fromJson(jsonDecode(value.body));
 
         // log("got tempp: $json");
         tempStatus = AccessStatus.accessed;
-        // temp = Temp.fromJson(json);
       });
     }).onError((error, stackTrace) {
       setState(() {
@@ -65,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Card _buildLabelledCard(
+  Widget _buildLabelledCard(
       LabelledCardTheme theme, String label, Widget content) {
     Color? cardColor;
     Color? labelColor;
@@ -78,27 +92,33 @@ class _HomeScreenState extends State<HomeScreen> {
       labelColor = Colors.red.shade900;
     }
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: cardColor,
-      elevation: 5,
-      child: Stack(children: [
-        Positioned(
-          top: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-            decoration: BoxDecoration(
-                color: labelColor,
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    bottomRight: Radius.circular(8))),
-            child: Text(
-              label,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 6),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        color: cardColor,
+        elevation: 5,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 50),
+          child: Stack(children: [
+            Positioned(
+              top: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                decoration: BoxDecoration(
+                    color: labelColor,
+                    borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8))),
+                child: Text(
+                  label,
+                ),
+              ),
             ),
-          ),
+            content
+          ]),
         ),
-        content
-      ]),
+      ),
     );
   }
 
@@ -128,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAccessedStatusCard() {
     return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
         child: _buildLabelledCard(
             LabelledCardTheme.defaultt,
             "Status",
@@ -154,15 +174,84 @@ class _HomeScreenState extends State<HomeScreen> {
         LabelledCardTheme.defaultt,
         cardLabel,
         const Center(
-          child: CircularProgressIndicator(),
+          child: Padding(
+            padding: EdgeInsets.only(top: 10),
+            child: SizedBox(
+              child: CircularProgressIndicator(),
+              height: 30.0,
+              width: 30.0,
+            ),
+          ),
         ),
       );
     } else if (accessStatus == AccessStatus.accessed && temp != null) {
       return _buildLabelledCard(
-          LabelledCardTheme.error,
+          LabelledCardTheme.defaultt,
           cardLabel,
-          Center(
-            child: Text(jsonEncode(temp)),
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 10),
+            child: Center(
+                child: Column(children: [
+              Table(
+                columnWidths: const {
+                  0: IntrinsicColumnWidth(flex: 1),
+                  1: IntrinsicColumnWidth(flex: 1)
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  TableRow(children: [
+                    Container(
+                        alignment: Alignment.centerRight,
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Text("CPU fan:"),
+                        )),
+                    Text(temp?.fan2 != null
+                        ? "${temp!.fan2.toString()} RPM"
+                        : "?")
+                  ]),
+                  TableRow(children: [
+                    Container(
+                        alignment: Alignment.centerRight,
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Text("CPUTIN:"),
+                        )),
+                    Text(formatDegree(temp!.cputin))
+                  ]),
+                  TableRow(children: [
+                    Container(
+                        alignment: Alignment.centerRight,
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Text("SYSTIN:"),
+                        )),
+                    Text(formatDegree(temp!.systin))
+                  ]),
+                ],
+              ),
+              Table(
+                columnWidths: const {
+                  0: IntrinsicColumnWidth(flex: 2),
+                  1: IntrinsicColumnWidth(flex: 1)
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  ...temp!.disks.keys
+                      .map((e) => TableRow(children: [
+                            Container(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: Text("$e:"),
+                              ),
+                            ),
+                            Text(formatDegree(temp!.disks[e])),
+                          ]))
+                      .toList()
+                ],
+              ),
+            ])),
           ));
     } else {
       return _buildErrorCard(cardLabel, "Cannot get system temperature");
@@ -173,8 +262,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (accessStatus == AccessStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     } else if (accessStatus == AccessStatus.accessed && status != null) {
-      tempTimer ??= Timer.periodic(
-          const Duration(seconds: 10), (Timer t) => updateTemp());
+      tempTimer ??=
+          Timer.periodic(const Duration(seconds: 2), (Timer t) => updateTemp());
       return Column(children: [_buildAccessedStatusCard(), _buildTempCard()]);
     } else {
       return _buildErrorCard("Status", "Cannot reach server.",
@@ -186,6 +275,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: const Text("Homeserver mobile client")),
-        body: _buildHomeScreenCards());
+        body: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                clearScreen();
+                updateStatus();
+              });
+            },
+            child: ListView(children: [_buildHomeScreenCards()])));
   }
 }
