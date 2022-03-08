@@ -6,9 +6,11 @@ import 'config.dart';
 
 const String baseUrl = "http://192.168.0.15:8080";
 
+const timeout = Duration(seconds: 5);
+
 Future<http.Response> getStatus() {
   try {
-    return http.get(Uri.parse("$baseUrl/status"));
+    return http.get(Uri.parse("$baseUrl/status")).timeout(timeout);
   } on SocketException {
     throw Exception("Homeserver api unreachable");
   }
@@ -16,7 +18,8 @@ Future<http.Response> getStatus() {
 
 Future<http.Response> getTemp() {
   try {
-    return http.get(Uri.parse("$baseUrl/temp"));
+    return http.get(Uri.parse("$baseUrl/temp")).timeout(timeout);
+    ;
   } on SocketException {
     throw Exception("Homeserver api unreachable");
   }
