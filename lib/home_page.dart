@@ -28,7 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    updateStatus();
+    // updateStatus();
+    turnOn2().then((value) => print(value.body));
   }
 
   void updateStatus() {

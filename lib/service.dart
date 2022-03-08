@@ -1,5 +1,7 @@
+import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'config.dart';
@@ -41,5 +43,36 @@ Future<http.Response> turnOff() {
     return http.get(Uri.parse("$baseUrl/suspend"));
   } on SocketException {
     throw Exception("Homeserver api unreachable");
+  }
+}
+
+Future<String?> getCsrfToken() async {
+  try {
+    http.Response response = await http.get(Uri.parse("https://rentry.co"));
+    return response.headers["set-cookie"];
+  } on SocketException {
+    throw Exception("Rentry api unreachable");
+  }
+}
+
+Future<http.Response> turnOn2() async {
+  try {
+    String? csfrToken = await getCsrfToken();
+    if (csfrToken == null) {
+      log("cannot get csfr token");
+      throw Exception("Cannot get csfr token");
+    }
+    http.Response response = await http
+        .post(Uri.parse("https://rentry.co/api/edit/$turnOnRentryPath"), body: {
+      "csrfmiddlewaretoken": csfrToken.split("csrftoken=")[1].split(";")[0],
+      "edit_code": rentryEditCode,
+      "text": DateTime.now().toString()
+    }, headers: {
+      "Referer": "https://rentry.co",
+      "Cookie": csfrToken
+    });
+    return response;
+  } on SocketException {
+    throw Exception("Rentry api unreachable");
   }
 }
