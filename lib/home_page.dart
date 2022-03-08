@@ -186,6 +186,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     } else if (accessStatus == AccessStatus.accessed && temp != null) {
+      List<String> diskNames = temp!.disks.keys.toList();
+      diskNames.sort();
       return _buildLabelledCard(
           LabelledCardTheme.defaultt,
           cardLabel,
@@ -229,6 +231,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         )),
                     Text(formatDegree(temp!.systin))
                   ]),
+                  TableRow(children: [
+                    Container(
+                        alignment: Alignment.centerRight,
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Text("GPU:"),
+                        )),
+                    Text(formatDegree(temp!.gpu))
+                  ]),
                 ],
               ),
               Table(
@@ -238,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                 children: [
-                  ...temp!.disks.keys
+                  ...diskNames
                       .map((e) => TableRow(children: [
                             Container(
                               alignment: Alignment.centerRight,
