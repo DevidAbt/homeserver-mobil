@@ -75,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         log("temp error: $error");
         tempStatus = AccessStatus.failed;
+        updateStatus();
       });
     });
   }
@@ -264,10 +265,45 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (accessStatus == AccessStatus.accessed && status != null) {
       tempTimer ??=
           Timer.periodic(const Duration(seconds: 2), (Timer t) => updateTemp());
-      return Column(children: [_buildAccessedStatusCard(), _buildTempCard()]);
+      return Column(children: [
+        _buildAccessedStatusCard(),
+        _buildTempCard(),
+        Center(
+            child: OutlinedButton(
+                child: const Text("Suspend server",
+                    style: TextStyle(color: Colors.redAccent)),
+                onPressed: () {
+                  turnOff().then((value) => {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text("Server will go asleep soon")))
+                      });
+                }))
+      ]);
+      ;
     } else {
-      return _buildErrorCard("Status", "Cannot reach server.",
-          fontSize: 20, height: 80, textTopPadding: 0);
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _buildErrorCard("Status", "Cannot reach server.",
+              fontSize: 20, height: 80, textTopPadding: 0),
+          Center(
+              child: OutlinedButton(
+            child: const Text("Awake server"),
+            onPressed: () {
+              turnOn().then((value) => {
+                    if (value.statusCode == 200)
+                      {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text("Successfully sent awake signal")))
+                      }
+                  });
+            },
+          ))
+        ],
+      );
     }
   }
 
